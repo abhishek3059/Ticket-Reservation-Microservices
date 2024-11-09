@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
+    <excludeFromCompile>
+      <directory url="file://$PROJECT_DIR$/CommonDTO/src/main/resources/archetype-resources" includeSubdirectories="true" />
+    </excludeFromCompile>
     <annotationProcessing>
       <profile default="true" name="Default" enabled="true" />
       <profile name="Maven default annotation processors profile" enabled="true">
@@ -10,6 +13,7 @@
         <module name="Booking-Service" />
         <module name="Location-Service" />
         <module name="USER-AUTHENTICATION" />
+        <module name="CommonDTO" />
         <module name="Train-Service" />
         <module name="Passenger-Service" />
         <module name="Api-Gateway" />
@@ -21,6 +25,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="Api-Gateway" options="-parameters" />
       <module name="Booking-Service" options="-parameters" />
+      <module name="CommonDTO" options="" />
       <module name="Location-Service" options="-parameters" />
       <module name="Passenger-Service" options="-parameters" />
       <module name="Service-Registry" options="-parameters" />

@@ -60,6 +60,11 @@
 			<artifactId>spring-cloud-loadbalancer</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>com.dto</groupId>
+			<artifactId>CommonDTO</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
 			<version>0.12.6</version>

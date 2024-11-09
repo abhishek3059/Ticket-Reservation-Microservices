@@ -3,13 +3,16 @@ package com.userAuthentication.model;
 import com.userAuthentication.enums.UserRole;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Pattern;
+import lombok.Builder;
 import lombok.Data;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Data
+@Builder
 public class User {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -28,7 +31,6 @@ public class User {
             regexp = "^[\\+]?[(]?[0-9]{3}[)]?[-\\s\\.]?[0-9]{3}[-\\s\\.]?[0-9]{4,6}$",
             message = "Enter the valid phone number")
     private String contactDetails;
-
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(

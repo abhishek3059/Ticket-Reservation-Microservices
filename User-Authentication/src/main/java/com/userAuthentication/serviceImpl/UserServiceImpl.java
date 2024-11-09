@@ -1,11 +1,13 @@
 package com.userAuthentication.serviceImpl;
 
+import com.dto.CommonDTO.UserLoginRequest;
+import com.dto.CommonDTO.UserRegistrationRequest;
 import com.userAuthentication.customExceptions.BadCredentialsException;
 import com.userAuthentication.customExceptions.UserAlreadyExistsException;
 import com.userAuthentication.enums.UserRole;
 import com.userAuthentication.model.User;
-import com.userAuthentication.model.UserLoginRequest;
-import com.userAuthentication.model.UserRegistrationRequest;
+import com.userAuthentication.dto.UserLoginRequest;
+import com.userAuthentication.dto.UserRegistrationRequest;
 import com.userAuthentication.repository.UserRepository;
 import com.userAuthentication.service.UserService;
 import lombok.AllArgsConstructor;

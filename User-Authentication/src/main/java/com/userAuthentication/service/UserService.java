@@ -1,7 +1,9 @@
 package com.userAuthentication.service;
 
-import com.userAuthentication.model.UserLoginRequest;
-import com.userAuthentication.model.UserRegistrationRequest;
+import com.dto.CommonDTO.UserLoginRequest;
+import com.dto.CommonDTO.UserRegistrationRequest;
+import com.userAuthentication.dto.UserLoginRequest;
+import com.userAuthentication.dto.UserRegistrationRequest;
 import org.springframework.http.ResponseEntity;
 
 
