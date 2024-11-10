@@ -4,13 +4,18 @@ package com.train_service.model;
 import com.dto.CommonDTO.LocationDTO;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import lombok.*;
 
 import java.util.List;
 import java.util.Map;
 
-    @Data
+
     @Entity
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Getter
+    @Setter
     public class Train {
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;

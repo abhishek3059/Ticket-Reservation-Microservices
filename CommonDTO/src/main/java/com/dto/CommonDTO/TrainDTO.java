@@ -1,17 +1,15 @@
 package com.dto.CommonDTO;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 import java.util.Map;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
 @Builder
+@Getter
+@Setter
 public class TrainDTO{
 private Long id;
 

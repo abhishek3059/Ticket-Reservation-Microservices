@@ -2,8 +2,6 @@ package com.userAuthentication.controller;
 
 import com.dto.CommonDTO.UserLoginRequest;
 import com.dto.CommonDTO.UserUpdateRequest;
-import com.userAuthentication.dto.UserLoginRequest;
-import com.userAuthentication.dto.UserUpdateRequest;
 import com.userAuthentication.model.User;
 import com.userAuthentication.service.UserServiceUserAccess;
 import org.springframework.beans.factory.annotation.Autowired;

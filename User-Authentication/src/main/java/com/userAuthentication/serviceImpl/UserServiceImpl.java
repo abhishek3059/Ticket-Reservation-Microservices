@@ -6,8 +6,6 @@ import com.userAuthentication.customExceptions.BadCredentialsException;
 import com.userAuthentication.customExceptions.UserAlreadyExistsException;
 import com.userAuthentication.enums.UserRole;
 import com.userAuthentication.model.User;
-import com.userAuthentication.dto.UserLoginRequest;
-import com.userAuthentication.dto.UserRegistrationRequest;
 import com.userAuthentication.repository.UserRepository;
 import com.userAuthentication.service.UserService;
 import lombok.AllArgsConstructor;
@@ -41,6 +39,8 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setUserName(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setEmail(request.getEmail());
+        user.setContactDetails(request.getContactDetails());
         if (request.getRoles() != null && !request.getRoles().isEmpty()) {
             for (String role : request.getRoles()) {
                 user.getUserRoleSet().add(UserRole.valueOf(role.startsWith("ROLE_") ? role.toUpperCase() : "ROLE_" + role.toUpperCase()));

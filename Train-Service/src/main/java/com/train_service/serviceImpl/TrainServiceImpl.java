@@ -2,61 +2,90 @@ package com.train_service.serviceImpl;
 
 import com.dto.CommonDTO.LocationDTO;
 import com.dto.CommonDTO.TrainDTO;
+import com.train_service.customException.TrainAlreadyExists;
 import com.train_service.customException.TrainNotFound;
 import com.train_service.model.Train;
 import com.train_service.repository.TrainRepository;
 import com.train_service.service.TrainService;
-import jakarta.validation.constraints.Min;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-@AllArgsConstructor
-@Data
+
+@Service
 public class TrainServiceImpl implements TrainService {
 
 
     private final TrainRepository trainRepository;
     private final WebClient client;
 
-
     public TrainServiceImpl
             (WebClient.Builder webClientBuilder,
              TrainRepository trainRepository)
     {
-        this.client = webClientBuilder.baseUrl("http://LOCATION-SERVICE").build();
+        this.client = webClientBuilder.baseUrl("lb://LOCATION-SERVICE").build();
         this.trainRepository = trainRepository;
     }
 
+
     @Override
-    public List<TrainDTO> getAll() {
-        return trainRepository.findAll().stream().map(this::convertTraintoTrainDTO).toList();
+    public ResponseEntity<List<TrainDTO>> getAll() {
+        List<TrainDTO> trainDTOS = trainRepository.findAll().stream().map(this::convertTraintoTrainDTO).toList();
+        return ResponseEntity.ok(trainDTOS);
     }
 
     @Override
-    public TrainDTO getTrainByTrainNumber(String trainNumber) {
+    public ResponseEntity<TrainDTO> getTrainByTrainNumber(String trainNumber) {
         Train train = trainRepository.findByTrainNumber(trainNumber).
                     orElseThrow(() -> new TrainNotFound(" Invalid Train Number"));
-        return convertTraintoTrainDTO(train);
+        return ResponseEntity.ok(convertTraintoTrainDTO(train));
     }
 
     @Override
-    public TrainDTO getTrainWithFullRoute(String trainNumber) {
+    public ResponseEntity<TrainDTO> getTrainWithFullRoute(String trainNumber) {
       Train train = trainRepository.findByTrainNumber(trainNumber).orElseThrow(() -> new TrainNotFound("Train Not found"));
-      return convertTraintoTrainDTO(train);
+      if(!train.getTrainRoute().isEmpty()){
+          return ResponseEntity.ok(convertTraintoTrainDTO(train));
+      }
+      else throw new
+              RuntimeException("Train has no route Admin please update by using -> " +
+              "type post -> uri='api/trains/update-train-route/{trainNumber}");
     }
 
     @Override
-    public void addStationToRoute(String trainNumber, long locationId, @Min(value = 2, message = "Values should Start from 2") int order) {
-        Train train = trainRepository.findByTrainNumber(trainNumber).orElseThrow(()-> new TrainNotFound("Train Not Found"));
-        train.getTrainRoute().put(1,train.getSource());
-        train.getTrainRoute().put(order,fetchLocationFromLocationService(locationId).getStationName());
-        int max = train.getTrainRoute().keySet().stream().max(Integer::compareTo).orElse(1);
-        train.getTrainRoute().put(max + 1, train.getDestination());
+    public void addStationToRoute(String trainNumber, Map<Integer,Long> stationWithOrder) {
+       Train train = trainRepository.findByTrainNumber(trainNumber)
+               .orElseThrow(()-> new TrainNotFound("Train with train number "+trainNumber+ " dpes not exists"));
+       if(train.getTrainRoute().isEmpty()){
+           train.setTrainRoute(new HashMap<>());
+       }
+       train.getTrainRoute().put(1,train.getSource());
 
-        trainRepository.save(train);
+       for(Map.Entry<Integer,Long> entry : stationWithOrder.entrySet()){
+           Integer order = entry.getKey();
+           Long locationId = entry.getValue();
+           LocationDTO station = fetchLocationFromLocationService(locationId);
+           if(station == null){
+               throw new IllegalArgumentException("Station with location id is not available in location service");
+           }
+
+       if(train.getTrainRoute().containsKey(order)){
+           throw new IllegalArgumentException("Station with order "+ order+ " is already assigned in the database" );
+       }
+       train.getTrainRoute().put(order,station.getStationName());
+
+       }
+
+       int max = train.getTrainRoute().keySet().stream().max(Integer::compareTo).orElse(1);
+       train.getTrainRoute().put(max, train.getDestination());
+       trainRepository.save(train);
+
 
 
 
@@ -66,24 +95,48 @@ public class TrainServiceImpl implements TrainService {
     public LocationDTO fetchLocationFromLocationService(long locationId) {
         return client.get()
                 .uri("api/location/DTO/{locationId}",locationId)
-                .retrieve().bodyToMono(LocationDTO.class)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError,response ->{
+                    return Mono.error(new IllegalArgumentException("Invalid location id :"+ locationId));
+                })
+                .onStatus(HttpStatusCode::is5xxServerError, response ->{
+                    return Mono.error(new RuntimeException("Location Service server is not responding"));
+                })
+                .bodyToMono(LocationDTO.class)
                 .block();
+
 
     }
 
     @Override
-    public List<TrainDTO> sendDataOfTrainsForStationName(String stationName) {
-        return trainRepository.findAll().stream()
-                .filter(train -> train.getTrainRoute()
-                        .values().stream().anyMatch(station ->
-                                station.equalsIgnoreCase(stationName)))
-                                        .map(this::convertTraintoTrainDTO)
-                                                    .toList();
+    public List<String> sendDataOfTrainsForStationName(String stationName) {
+        List<TrainDTO> trainDTOs = trainRepository.findAll().stream()
+                .filter(train -> train.getTrainRoute() != null &&
+                        train.getTrainRoute().values().stream()
+                                .anyMatch(station -> station != null &&
+                                        station.equalsIgnoreCase(stationName)))
+                .map(this::convertTraintoTrainDTO)
+                .toList();
+        if(trainDTOs == null){
+            throw new NullPointerException("value is null");
+        }
+        return trainDTOs.stream().map(TrainDTO::getTrainNumber).toList();
+
+
+    }
+
+    @Override
+    public void addTrain(TrainDTO train) {
+        if(trainRepository.existsByTrainNumber(train.getTrainNumber())){
+            throw new TrainAlreadyExists("Train Already exists in database");
+        }
+        trainRepository.save(convertTrainDTOtoTrain(train));
+
 
     }
 
     private TrainDTO convertTraintoTrainDTO(Train train) {
-        return TrainDTO.builder().id(train.getId())
+        return TrainDTO.builder()
                 .trainNumber(train.getTrainNumber())
                 .source(train.getSource())
                 .destination(train.getDestination())
@@ -91,5 +144,13 @@ public class TrainServiceImpl implements TrainService {
                 .trainRoute(train.getTrainRoute())
                 .build();
     }
+     private Train convertTrainDTOtoTrain(TrainDTO train){
+         return Train.builder()
+                 .trainNumber(train.getTrainNumber())
+                 .source(train.getSource())
+                 .destination(train.getDestination())
+                 .name(train.getName())
+                 .trainRoute(train.getTrainRoute()).build();
+     }
 
 }

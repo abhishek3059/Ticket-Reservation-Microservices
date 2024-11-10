@@ -2,8 +2,7 @@ package com.userAuthentication.service;
 
 import com.dto.CommonDTO.UserLoginRequest;
 import com.dto.CommonDTO.UserUpdateRequest;
-import com.userAuthentication.dto.UserLoginRequest;
-import com.userAuthentication.dto.UserUpdateRequest;
+
 import com.userAuthentication.model.User;
 import org.springframework.http.ResponseEntity;
 

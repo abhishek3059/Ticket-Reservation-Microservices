@@ -3,6 +3,7 @@ package com.dto.CommonDTO;
 
 import lombok.*;
 
+import java.util.List;
 import java.util.Objects;
 
 @Getter
@@ -16,6 +17,7 @@ public class LocationDTO {
     private String stationCode;
     private String city;
     private String state;
+    private List<String> listOfTrainNumbers;
 
 
 }

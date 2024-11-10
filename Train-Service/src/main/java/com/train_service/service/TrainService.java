@@ -2,17 +2,19 @@ package com.train_service.service;
 
 import com.dto.CommonDTO.LocationDTO;
 import com.dto.CommonDTO.TrainDTO;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
+import java.util.Map;
 
 public interface TrainService {
 
-    public List<TrainDTO> getAll();
-    public TrainDTO getTrainByTrainNumber(String trainNumber);
-    public TrainDTO getTrainWithFullRoute(String trainNumber);
+    public ResponseEntity<List<TrainDTO>> getAll();
+    public ResponseEntity<TrainDTO> getTrainByTrainNumber(String trainNumber);
+    public ResponseEntity<TrainDTO> getTrainWithFullRoute(String trainNumber);
     public void addStationToRoute
-            (String trainNumber, long locationId, int order);
+            (String trainNumber, Map<Integer,Long> stationWithOrder);
     public LocationDTO fetchLocationFromLocationService(long locationId);
-    public List<TrainDTO> sendDataOfTrainsForStationName(String stationName);
-
+    public List<String> sendDataOfTrainsForStationName(String stationName);
+    public void addTrain (TrainDTO train);
 }

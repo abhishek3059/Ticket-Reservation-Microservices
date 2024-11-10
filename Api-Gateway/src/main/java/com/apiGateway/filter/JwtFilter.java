@@ -20,6 +20,7 @@ public class JwtFilter extends AbstractGatewayFilterFactory<JwtFilter.config> {
             .build();
     }
 
+
     @Override
     public GatewayFilter apply(config config) {
         return ((exchange, chain) -> {
