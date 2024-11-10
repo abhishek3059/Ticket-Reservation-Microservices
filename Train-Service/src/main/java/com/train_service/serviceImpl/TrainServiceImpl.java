@@ -117,9 +117,6 @@ public class TrainServiceImpl implements TrainService {
                                         station.equalsIgnoreCase(stationName)))
                 .map(this::convertTraintoTrainDTO)
                 .toList();
-        if(trainDTOs == null){
-            throw new NullPointerException("value is null");
-        }
         return trainDTOs.stream().map(TrainDTO::getTrainNumber).toList();
 
 
