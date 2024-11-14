@@ -1,4 +1,9 @@
 package com.payment_service.enums;
 
-public class PaymentStatus {
+public enum PaymentStatus {
+    PENDING,
+    PROCESSING,
+    COMPLETED,
+    FAILED,
+    REFUNDED
 }

@@ -14,20 +14,26 @@
         <module name="Location-Service" />
         <module name="USER-AUTHENTICATION" />
         <module name="CommonDTO" />
+        <module name="Payment-Service" />
         <module name="Train-Service" />
         <module name="Passenger-Service" />
         <module name="Api-Gateway" />
         <module name="Service-Registry" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="Booking-Service (1)" target="21" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="Api-Gateway" options="-parameters" />
       <module name="Booking-Service" options="-parameters" />
+      <module name="Booking-Service (1)" options="-parameters" />
       <module name="CommonDTO" options="" />
       <module name="Location-Service" options="-parameters" />
       <module name="Passenger-Service" options="-parameters" />
+      <module name="Payment-Service" options="-parameters" />
       <module name="Service-Registry" options="-parameters" />
       <module name="Train-Service" options="-parameters" />
       <module name="USER-AUTHENTICATION" options="-parameters" />

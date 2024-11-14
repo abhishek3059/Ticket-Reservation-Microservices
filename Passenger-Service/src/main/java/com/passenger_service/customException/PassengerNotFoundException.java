@@ -1,7 +1,7 @@
 package com.passenger_service.customException;
 
-public class PassengerAlreadyExistsException extends RuntimeException {
-    public PassengerAlreadyExistsException(String message) {
+public class PassengerNotFoundException extends RuntimeException {
+    public PassengerNotFoundException(String message) {
 
         super(message);
     }

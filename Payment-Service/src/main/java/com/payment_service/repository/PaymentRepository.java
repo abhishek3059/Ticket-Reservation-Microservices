@@ -1,4 +1,7 @@
 package com.payment_service.repository;
 
-public interface PaymentRepository {
+import com.payment_service.model.Payments;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PaymentRepository extends JpaRepository<Payments,String> {
 }

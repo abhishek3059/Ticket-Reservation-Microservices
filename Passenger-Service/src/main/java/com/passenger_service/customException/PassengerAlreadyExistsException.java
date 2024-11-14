@@ -1,7 +1,7 @@
-package com.train_service.customException;
+package com.passenger_service.customException;
 
-public class TrainAlreadyExists extends RuntimeException {
-    public TrainAlreadyExists(String message) {
+public class PassengerAlreadyExistsException extends RuntimeException {
+    public PassengerAlreadyExistsException(String message) {
 
         super(message);
     }

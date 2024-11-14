@@ -4,6 +4,8 @@ import com.dto.CommonDTO.LocationDTO;
 import com.dto.CommonDTO.TrainDTO;
 import com.train_service.customException.TrainAlreadyExists;
 import com.train_service.customException.TrainNotFound;
+import com.train_service.enums.Days;
+import com.train_service.enums.SeatType;
 import com.train_service.model.Train;
 import com.train_service.repository.TrainRepository;
 import com.train_service.service.TrainService;
@@ -13,9 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Service
@@ -127,8 +127,19 @@ public class TrainServiceImpl implements TrainService {
         if(trainRepository.existsByTrainNumber(train.getTrainNumber())){
             throw new TrainAlreadyExists("Train Already exists in database");
         }
-        trainRepository.save(convertTrainDTOtoTrain(train));
+        Train trainToBeSaved = convertTrainDTOtoTrain(train);
+        initializeSeats(trainToBeSaved);
+        trainRepository.save(trainToBeSaved);
 
+
+    }
+
+    private void initializeSeats(Train train) {
+        Map<SeatType , Integer> seatMap = new EnumMap<>(SeatType.class);
+       for(SeatType seatType : SeatType.values()){
+           seatMap.put(seatType,20);
+       }
+       train.setAvailableSeats(seatMap);
 
     }
 
@@ -141,13 +152,46 @@ public class TrainServiceImpl implements TrainService {
                 .trainRoute(train.getTrainRoute())
                 .build();
     }
+
+
      private Train convertTrainDTOtoTrain(TrainDTO train){
-         return Train.builder()
+         Train train1 = Train.builder()
                  .trainNumber(train.getTrainNumber())
                  .source(train.getSource())
                  .destination(train.getDestination())
                  .name(train.getName())
                  .trainRoute(train.getTrainRoute()).build();
+         if (train.getRunningDays() != null && checkValidDaysForSavingRunningDaysOfTrain(train.getRunningDays())) {
+             EnumSet<Days> runningDays = convertDTORunningDaysIntoTrainRunningDays(train.getRunningDays());
+             train1.setRunningDays(runningDays);
+         }
+         return train1;
      }
+
+    private EnumSet<Days> convertDTORunningDaysIntoTrainRunningDays(Set<String> runningDays) {
+        EnumSet<Days> days = EnumSet.noneOf(Days.class);
+        for(String S : runningDays){
+            days.add(Days.valueOf(S.toUpperCase()));
+        }
+        return days;
+    }
+
+    private Boolean checkValidDaysForSavingRunningDaysOfTrain(Set<String> runningDays) {
+             boolean flag = true;
+         for(String days : runningDays){
+             if(!(days.equalsIgnoreCase("monday")||
+                     days.equalsIgnoreCase("tuesday")||
+                     days.equalsIgnoreCase("wednesday")||
+                     days.equalsIgnoreCase("thursday")||
+                     days.equalsIgnoreCase("friday")||
+                     days.equalsIgnoreCase("saturday")||
+                     days.equalsIgnoreCase("sunday"))){
+                 flag = false;
+                 throw new IllegalArgumentException("Invalid day "+ days);
+             }
+
+         }
+         return flag;
+    }
 
 }

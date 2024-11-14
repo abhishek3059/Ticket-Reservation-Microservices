@@ -20,8 +20,15 @@
 			<version>1.18.30</version>
 			<scope>provided</scope>
 		</dependency>
+
+		<!-- Jakarta Validation API for validation annotations like @NotNull -->
+
+
+		<!-- Spring Boot Starter Validation for @DateTimeFormat and other validation annotations -->
+
 		<!-- Add any essential dependencies for DTOs here if needed, such as validation dependencies -->
 	</dependencies>
+
 
 	<build>
 		<plugins>

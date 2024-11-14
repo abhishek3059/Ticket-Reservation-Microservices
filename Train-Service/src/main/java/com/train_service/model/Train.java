@@ -2,15 +2,16 @@ package com.train_service.model;
 
 
 import com.dto.CommonDTO.LocationDTO;
+import com.train_service.enums.Days;
+import com.train_service.enums.SeatType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
-    @Entity
+@Entity
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
@@ -24,6 +25,7 @@ import java.util.Map;
         private String source;
         private String  destination;
         private String name;
+        private Double baseFare;
 
         @ElementCollection
         @CollectionTable(name = "train_route",
@@ -32,6 +34,17 @@ import java.util.Map;
         @Column(name = "station_name")         // the value in the Map (String)
         private Map<Integer, String> trainRoute;
 
+        @ElementCollection
+        @CollectionTable(name = "seat_availability",joinColumns = @JoinColumn(name = "train_id"))
+        @MapKeyColumn(name = "seat_type")
+        @Column(name = "available_seats")
+        private Map<SeatType, Integer> availableSeats = new EnumMap<>(SeatType.class);
 
+        @ElementCollection(targetClass = Days.class)
+        @CollectionTable(name = "train_schedule", joinColumns =
+        @JoinColumn(name = "train_id"))
+        @Enumerated(EnumType.STRING)
+        @Column(name = "running_days")
+        private EnumSet<Days> runningDays;
 
     }

@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Entity
@@ -32,5 +33,10 @@ public class Location {
     @ElementCollection // Maps the list of strings as a collection in JPA
     @Column(name = "train_number") // You can specify the column name for items in the list
     private List<String> listOfTrainNumbers;
+    @OneToMany(mappedBy = "source_station")
+    private Set<StationDistance> sourceDistances;
+    @OneToMany(mappedBy = "destination_station")
+    private Set<StationDistance> destinationDistance;
+
 
 }
