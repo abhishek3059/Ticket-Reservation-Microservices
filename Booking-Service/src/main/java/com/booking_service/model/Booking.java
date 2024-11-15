@@ -3,6 +3,7 @@ package com.booking_service.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -18,7 +19,7 @@ public class Booking {
     @Id
     private String bookingId;
     @Column(nullable = false)
-    private List<String> passengerIds;
+    private String passengerId;
     @Column(nullable = false)
     private String trainNumber;
     @Column(nullable = false)
@@ -28,9 +29,12 @@ public class Booking {
     @Column (nullable = false)
     private String destinationStation;
     @Column(nullable = false)
-    private Long ticketPrice;
+    private Double ticketPrice;
     @Column(nullable = false)
-    private Date date;
+    private LocalDate date;
+    @Column(nullable = false)
+    private String paymentId;
+
 
 
     @PrePersist

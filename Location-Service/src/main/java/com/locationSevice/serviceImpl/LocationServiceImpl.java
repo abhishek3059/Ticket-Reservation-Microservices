@@ -1,7 +1,6 @@
 package com.locationSevice.serviceImpl;
 
 import com.dto.CommonDTO.LocationDTO;
-import com.dto.CommonDTO.TrainDTO;
 import com.locationSevice.customException.StationNotFound;
 import com.locationSevice.model.Location;
 import com.locationSevice.repository.LocationRepository;
@@ -119,6 +118,15 @@ public class LocationServiceImpl implements LocationService {
        }
            location.setListOfTrainNumbers(trains);
        locationRepository.save(location);
+    }
+    @Override
+    public ResponseEntity<Boolean> verifyStationDetails(String stationName){
+        if(locationRepository.existsByStationName(stationName)){
+            throw new IllegalArgumentException("Station "+stationName+" does not exists");
+        }
+        else{
+            return ResponseEntity.ok(true);
+        }
     }
 
 

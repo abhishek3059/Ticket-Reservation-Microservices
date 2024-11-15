@@ -11,4 +11,6 @@ public interface LocationRepository extends JpaRepository<Location,Long> {
     Optional<Location> findByStationCode(String stationCode);
 
     Optional<Location> findByStationName(String stationName);
+
+    Boolean existsByStationName(String stationName);
 }

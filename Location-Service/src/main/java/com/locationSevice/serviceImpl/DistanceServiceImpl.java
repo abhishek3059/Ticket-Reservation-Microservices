@@ -9,38 +9,39 @@ import com.locationSevice.repository.LocationRepository;
 import com.locationSevice.service.DistanceService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.context.config.ConfigDataResourceNotFoundException;
+import org.springframework.http.ResponseEntity;
 
 @RequiredArgsConstructor
 public class DistanceServiceImpl implements DistanceService {
     private final LocationRepository locationRepository;
     private final DistanceRepository distanceRepository;
     @Override
-    public Double getDistance(String sourceStationCode, String destinationStationCode) {
-       return distanceRepository.findBySourceStationCodeAndDistanceStationCode(sourceStationCode,destinationStationCode)
+    public ResponseEntity<Double> getDistance(String sourceStationName, String destinationStationName) {
+       Double distance = distanceRepository.findBySource_StationNameAndDistance_StationName(sourceStationName,destinationStationName)
                .map(StationDistance::getDistance).orElseThrow(() ->
                        new StationNotFound("distance between stations cannot be found"));
+       return ResponseEntity.ok(distance);
     }
 
     @Override
     @Transactional
-    public StationDistanceDTO setDistanceBetweenStations(String source, String destination, Double distance) {
-        Location sourceStation = locationRepository.findByStationCode(source).orElseThrow(() ->
+    public ResponseEntity<StationDistanceDTO> setDistanceBetweenStations(String source, String destination, Double distance) {
+        Location sourceStation = locationRepository.findByStationName(source).orElseThrow(() ->
                 new StationNotFound("Station "+source+" does not exists"));
-        Location destinationStation = locationRepository.findByStationCode(destination).orElseThrow(() ->
+        Location destinationStation = locationRepository.findByStationName(destination).orElseThrow(() ->
                 new StationNotFound("Station "+destination+" does not exists"));
         StationDistance stationDistance = StationDistance.builder()
                 .destination(destinationStation)
                 .source(sourceStation)
                 .distance(distance).build();
         distanceRepository.save(stationDistance);
-        return convertStationDistanceToStationDistanceDTO(stationDistance);
+        return ResponseEntity.ok(convertStationDistanceToStationDistanceDTO(stationDistance));
     }
 
     private StationDistanceDTO convertStationDistanceToStationDistanceDTO(StationDistance stationDistance) {
        return StationDistanceDTO.builder()
-                .destinationStationCode(stationDistance.getDestination().getStationCode())
-               .sourceStationCode(stationDistance.getSource().getStationCode())
+                .destinationStationName(stationDistance.getDestination().getStationCode())
+               .sourceStationName(stationDistance.getSource().getStationCode())
                .distance(stationDistance.getDistance()).build();
     }
 

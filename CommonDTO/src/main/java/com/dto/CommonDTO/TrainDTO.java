@@ -1,10 +1,8 @@
 package com.dto.CommonDTO;
 
-import com.dto.CommonDTO.enums.SeatTypeDTO;
+
 import lombok.*;
 
-import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,7 +18,7 @@ private String trainNumber;
     private String source;
     private String  destination;
     private String name;
-    private Map<Integer, String> trainRoute;
+    private Map<Integer, RouteDistanceDTO> trainRouteDistance;
     private Set<String> runningDays;
 
 }

@@ -20,8 +20,6 @@ public class Payments {
     private String bookingId;
     private String passengerId;
     private String trainNumber;
-    @Column(nullable = false)
-    private Double baseFare;
     @Column(nullable =false)
     private Double tax;
     @Column(nullable = false)

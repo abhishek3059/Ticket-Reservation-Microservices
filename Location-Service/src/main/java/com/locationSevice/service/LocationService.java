@@ -14,4 +14,6 @@ public interface LocationService {
     public LocationDTO sendLocationDetailsToOtherServices(Long locationId);
     public List<String> fetchTrainsByStationName(String stationName);
     public void addTrainsToStations(String stationName);
+
+    ResponseEntity<Boolean> verifyStationDetails(String stationName);
 }

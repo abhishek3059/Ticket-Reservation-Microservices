@@ -1,9 +1,10 @@
 package com.locationSevice.service;
 
 import com.dto.CommonDTO.StationDistanceDTO;
+import org.springframework.http.ResponseEntity;
 
 public interface DistanceService {
 
-    public Double getDistance(String sourceStationCode, String destinationStationCode);
-    public StationDistanceDTO setDistanceBetweenStations(String source, String destination, Double distance);
+    public ResponseEntity<Double> getDistance(String sourceStationCode, String destinationStationCode);
+    public ResponseEntity<StationDistanceDTO> setDistanceBetweenStations(String source, String destination, Double distance);
 }

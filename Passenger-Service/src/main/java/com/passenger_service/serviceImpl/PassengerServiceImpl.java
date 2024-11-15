@@ -8,13 +8,14 @@ import com.passenger_service.model.Passenger;
 import com.passenger_service.repository.PassengerRepository;
 import com.passenger_service.service.PassengerService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-
+@Service
 public class PassengerServiceImpl implements PassengerService {
 
 
@@ -49,6 +50,12 @@ public class PassengerServiceImpl implements PassengerService {
                 .bookings(passenger.getBookings())
                 .dateOfBirth(passenger.getDateOfBirth().toString())
                 .build();
+    }
+    @Override
+    public ResponseEntity<Boolean> verifyPassenger(String passengerId){
+        if(!repository.existsById(passengerId))
+            throw new PassengerNotFoundException("Passenger Does not exists");
+        else return ResponseEntity.ok(true);
     }
 
     @Override

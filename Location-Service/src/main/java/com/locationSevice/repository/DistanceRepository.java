@@ -8,6 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface DistanceRepository extends JpaRepository<StationDistance,Long> {
-    Optional<StationDistance> findBySourceStationCodeAndDistanceStationCode
-            (String sourceStationCode,String distanceStationCode);
+    Optional<StationDistance> findBySource_StationNameAndDistance_StationName
+            (String sourceStationName,String distanceStationName);
 }

@@ -2,6 +2,7 @@ package com.train_service.model;
 
 
 import com.dto.CommonDTO.LocationDTO;
+import com.train_service.enums.ClassType;
 import com.train_service.enums.Days;
 import com.train_service.enums.SeatType;
 import jakarta.persistence.*;
@@ -27,18 +28,15 @@ import java.util.*;
         private String name;
         private Double baseFare;
 
-        @ElementCollection
-        @CollectionTable(name = "train_route",
-                joinColumns = @JoinColumn(name = "train_id"))
-        @MapKeyColumn(name = "station_order")  // the key in the Map (Integer)
-        @Column(name = "station_name")         // the value in the Map (String)
-        private Map<Integer, String> trainRoute;
+
 
         @ElementCollection
-        @CollectionTable(name = "seat_availability",joinColumns = @JoinColumn(name = "train_id"))
-        @MapKeyColumn(name = "seat_type")
-        @Column(name = "available_seats")
-        private Map<SeatType, Integer> availableSeats = new EnumMap<>(SeatType.class);
+        @CollectionTable(name = "seat_allocation",
+                joinColumns =   
+                @JoinColumn(name = "train_id"))
+        @MapKeyEnumerated(EnumType.STRING)
+        private Map<ClassType, Map<SeatType, Map<Integer, SeatAllocation>>> seatAllocations = new HashMap<>();
+
 
         @ElementCollection(targetClass = Days.class)
         @CollectionTable(name = "train_schedule", joinColumns =
@@ -46,5 +44,15 @@ import java.util.*;
         @Enumerated(EnumType.STRING)
         @Column(name = "running_days")
         private EnumSet<Days> runningDays;
+        @ElementCollection
+        @CollectionTable(name = "train_route",
+            joinColumns = @JoinColumn(name = "train_id"))
+        @MapKeyColumn(name = "station_order")
+        @AttributeOverrides({
+            @AttributeOverride(name = "stationName", column = @Column(name = "station_name")),
+            @AttributeOverride(name = "distanceFromStart", column = @Column(name = "distance_from_start"))
+    })
+    private Map<Integer, RouteDistance> trainRouteDistance = new LinkedHashMap<>();
 
     }
+

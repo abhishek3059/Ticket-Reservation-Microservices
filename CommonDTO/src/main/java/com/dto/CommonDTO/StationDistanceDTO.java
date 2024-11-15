@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 public class StationDistanceDTO {
     private Long distanceId;
-    private String sourceStationCode;
-    private String destinationStationCode;
+    private String sourceStationName;
+    private String destinationStationName;
     private Double distance;
 }
