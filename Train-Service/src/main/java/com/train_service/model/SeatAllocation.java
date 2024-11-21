@@ -1,12 +1,26 @@
 package com.train_service.model;
 
-import jakarta.persistence.Embeddable;
+import com.train_service.enums.ClassType;
+import com.train_service.enums.SeatType;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Data
-@Embeddable
+@Entity
 public class SeatAllocation {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "train_id")
+    private Train train;
+    @Enumerated(EnumType.STRING)
+    private ClassType classType;
+    @Enumerated(EnumType.STRING)
+    private SeatType seatType;
     private Integer seatNumber;
     private Boolean isBooked;
-    private String bookingId;  // null if not booked
+    private String bookingId;
 }
+

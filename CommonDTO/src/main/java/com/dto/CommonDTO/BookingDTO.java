@@ -21,5 +21,6 @@ public class BookingDTO {
     private String boardingStation;
     private String destinationStation;
     private Double ticketPrice;
+    private String seatNumber;
     private LocalDate date;
 }

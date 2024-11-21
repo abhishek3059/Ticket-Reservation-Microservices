@@ -24,7 +24,7 @@ public interface TrainService {
     public void addTrain (TrainDTO train);
     public ResponseEntity<List<Integer>> getAvailableSeats(String trainNumber, String bookingClass, String seatChoice);
     public ResponseEntity<Boolean> bookSeat
-            (String trainNumber, String bookingClassType,String bookingSeatType, Integer seatNumber, String bookingId);
+            (String trainNumber, String bookingClassType,String bookingSeatType, Integer seatNumber);
 
-    void releaseSeat(String trainNumber, String bookingId);
+    ResponseEntity<Boolean> releaseSeat(String trainNumber, String bookingId);
 }

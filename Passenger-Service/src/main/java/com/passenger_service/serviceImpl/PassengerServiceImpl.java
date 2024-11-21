@@ -2,7 +2,6 @@ package com.passenger_service.serviceImpl;
 
 import com.dto.CommonDTO.BookingDTO;
 import com.dto.CommonDTO.PassengerDTO;
-import com.passenger_service.customException.PassengerAlreadyExistsException;
 import com.passenger_service.customException.PassengerNotFoundException;
 import com.passenger_service.model.Passenger;
 import com.passenger_service.repository.PassengerRepository;
@@ -28,9 +27,8 @@ public class PassengerServiceImpl implements PassengerService {
     }
     @Override
     public ResponseEntity<Void> createPassenger(PassengerDTO passengerDTO) throws ParseException {
-        if(repository.existsById(passengerDTO.getId()))
-            throw new PassengerAlreadyExistsException("Passenger with id " +passengerDTO.getId()+" already exists in Database");
-        repository.save(convertPassengerDTOIntoPassenger(passengerDTO));
+        Passenger passenger = convertPassengerDTOIntoPassenger(passengerDTO);
+        repository.save(passenger); // Database will generate the ID
         return ResponseEntity.ok().build();
     }
 
@@ -59,7 +57,7 @@ public class PassengerServiceImpl implements PassengerService {
     }
 
     @Override
-    public ResponseEntity<List<BookingDTO>> getAllBookingsMadeByPassenger(long passengerId) {
+    public ResponseEntity<List<BookingDTO>> getAllBookingsMadeByPassenger(String passengerId) {
         return null;
     }
 
@@ -80,7 +78,6 @@ public class PassengerServiceImpl implements PassengerService {
     }
     private Passenger convertPassengerDTOIntoPassenger(PassengerDTO passengerDTO) throws ParseException {
         return Passenger.builder()
-                .id(passengerDTO.getId())
                 .email(passengerDTO.getEmail())
                 .firstName(passengerDTO.getFirstName())
                 .lastName(passengerDTO.getLastName())

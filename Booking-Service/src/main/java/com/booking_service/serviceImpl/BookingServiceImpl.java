@@ -13,6 +13,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BookingServiceImpl implements BookingService {
@@ -35,7 +36,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public ResponseEntity<Void> createBooking(PassengerDTO passengerDTO, BookingRequest request) {
-     if(!verifyPassengerDetails(passengerDTO.getId())){
+     if(!verifyPassengerDetails(request.getPassengerId())){
          throw new IllegalArgumentException("Passenger details not valid");
      }
      if(!validateTrainDetails(request.getTrainNumber())){
@@ -44,9 +45,15 @@ public class BookingServiceImpl implements BookingService {
      if(!verifyStationDetails(request.getBoardingStation()) || !verifyStationDetails(request.getDestination())){
          throw new IllegalArgumentException("Enter valid station details");
      }
-     if(!getIsSeatAvailable(request)){
+     if(!bookSeat(request)){
          throw new SeatNotAvailable("Seat is not available try another seat");
      }
+     TrainDTO trainDTO = getTrainObject(request.getTrainNumber());
+     LocalDate DateOfBooking = LocalDate.now();
+     if(!trainDTO.getRunningDays().contains(DateOfBooking.getDayOfWeek().name().toUpperCase())){
+         throw new IllegalArgumentException(STR."This train is not available for booking on \{DateOfBooking.getDayOfWeek().name()} this day");
+     }
+
      else{
          Double totalAmount = calculateFare(request);
          PaymentRequest paymentRequest = PaymentRequest.builder()
@@ -67,9 +74,13 @@ public class BookingServiceImpl implements BookingService {
                      .trainName(getTrainDetails(request.getTrainNumber()))
                      .ticketPrice(response.getAmount())
                      .paymentId(response.getPaymentId())
+                     .seatNumber(request.getSeatNumber())
                      .passengerId(passengerDTO.getId())
                      .build();
-             repository.save(booking);
+            Booking bookedSeat =  repository.save(booking);
+
+
+
          }
      }
 
@@ -138,8 +149,19 @@ public class BookingServiceImpl implements BookingService {
                 .ticketPrice(dto.getTicketPrice())
                 .boardingStation(dto.getBoardingStation())
                 .destinationStation(dto.getDestinationStation())
+
                 .date(dto.getDate())
                 .build();
+    }
+    @Override
+    public ResponseEntity<String> sendBookingIdAfterBooking(Integer seatNumber){
+        if(seatNumber == null) return ResponseEntity.badRequest().build();
+       Optional<Booking> booking =  repository.findBySeatNumber(seatNumber);
+       if(booking.isPresent()){
+           String bookingId = booking.get().getBookingId();
+           return ResponseEntity.ok(bookingId);
+       }
+       else return ResponseEntity.badRequest().build();
     }
     private Double getTotalDistanceBetweenPassengersSourceAndDistance(BookingRequest request){
         return trainClient.get()
@@ -154,14 +176,13 @@ public class BookingServiceImpl implements BookingService {
                 .bodyToMono(Double.class)
                 .block();
 }
-    private Boolean getIsSeatAvailable(BookingRequest request){
+    private Boolean bookSeat(BookingRequest request){
       return  trainClient.put().uri(uri -> uri
                 .path("api/trains/trainDTO/Seat-Availability")
                 .queryParam("trainNumber",request.getTrainNumber())
                 .queryParam("classType",request.getClassType())
                 .queryParam("seatType",request.getSeatType())
                 .queryParam("seatNumber",request.getSeatNumber())
-                .queryParam("bookingId",request.getBookingId())
                 .build())
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
@@ -220,11 +241,10 @@ public class BookingServiceImpl implements BookingService {
     private Boolean validateTrainDetails(String trainNumber){
         TrainDTO trainDTO = trainClient.get()
                 .uri("api/trains/public/{trainNumber}",trainNumber)
-                .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(TrainDTO.class)
                 .block();
-        return trainDTO == null;
+        return trainDTO != null;
     }
     private Double calculateFare(BookingRequest request){
         final Double BASE_FARE = 100.0;
@@ -235,13 +255,20 @@ public class BookingServiceImpl implements BookingService {
     private String getTrainDetails(String trainNumber){
         TrainDTO trainDTO = trainClient.get()
                 .uri("api/trains/public/{trainNumber}",trainNumber)
-                .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(TrainDTO.class)
                 .block();
         if(trainDTO != null)
         return trainDTO.getTrainNumber();
         else throw new IllegalArgumentException("Train Not found");
+    }
+    private TrainDTO getTrainObject(String trainNumber){
+        return trainClient.get()
+                .uri("api/trains/public/{trainNumber}",trainNumber)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(TrainDTO.class)
+                .block();
     }
 
 

@@ -1,5 +1,6 @@
 package com.booking_service.controller;
 
+import com.booking_service.model.Booking;
 import com.booking_service.service.BookingService;
 import com.dto.CommonDTO.*;
 import lombok.AllArgsConstructor;
@@ -21,6 +22,10 @@ public class BookingController {
         BookingRequest bookingDTO = request.getBookingDTO();
         return bookingService.createBooking(passengerDTO,bookingDTO);
 
+    }
+    @GetMapping("/bookingIdAfterSaving") @ResponseStatus(HttpStatus.ACCEPTED)
+    public ResponseEntity<String> sendBookingIdAfterBooking(@RequestParam Integer seatNumber){
+        return bookingService.sendBookingIdAfterBooking(seatNumber);
     }
     @GetMapping("/{passengerId}")@ResponseStatus(HttpStatus.OK)
     public ResponseEntity<List<BookingDTO>> getBookingsByPassengerId(@PathVariable String passengerId){

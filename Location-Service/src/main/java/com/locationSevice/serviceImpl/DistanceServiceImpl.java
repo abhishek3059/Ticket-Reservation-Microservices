@@ -10,14 +10,16 @@ import com.locationSevice.service.DistanceService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
+@Service
 public class DistanceServiceImpl implements DistanceService {
     private final LocationRepository locationRepository;
     private final DistanceRepository distanceRepository;
     @Override
     public ResponseEntity<Double> getDistance(String sourceStationName, String destinationStationName) {
-       Double distance = distanceRepository.findBySource_StationNameAndDistance_StationName(sourceStationName,destinationStationName)
+       Double distance = distanceRepository.findBySource_StationNameAndDestination_StationName(sourceStationName,destinationStationName)
                .map(StationDistance::getDistance).orElseThrow(() ->
                        new StationNotFound("distance between stations cannot be found"));
        return ResponseEntity.ok(distance);
@@ -40,8 +42,8 @@ public class DistanceServiceImpl implements DistanceService {
 
     private StationDistanceDTO convertStationDistanceToStationDistanceDTO(StationDistance stationDistance) {
        return StationDistanceDTO.builder()
-                .destinationStationName(stationDistance.getDestination().getStationCode())
-               .sourceStationName(stationDistance.getSource().getStationCode())
+                .destinationStationName(stationDistance.getDestination().getStationName())
+               .sourceStationName(stationDistance.getSource().getStationName())
                .distance(stationDistance.getDistance()).build();
     }
 

@@ -5,7 +5,10 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.time.LocalDate;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
 @Entity
@@ -15,7 +18,7 @@ import java.util.Set;
 @Setter
 @Builder
 public class Passenger {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
     private String id;
     @Column(nullable = false)
     @NotNull(message = "Date of birth cannot be null")
@@ -27,11 +30,18 @@ public class Passenger {
     private String lastName;
     @Column(nullable = false , unique = true)
     private String email;
-    @ElementCollection
-    @CollectionTable(name = "train_bookings", joinColumns =
-    @JoinColumn(name = "train_id"))
-    @Column(name = "booking_id")
-    private Set<Long> bookings;
+
+    private Set<Long> bookings = new HashSet<>();
+
+    @PrePersist
+    void generateId(){
+    Random random = new Random();
+    if(this.id == null || this.id.isEmpty()){
+        int rand = 10000 + random.nextInt(99999);
+        this.id = "P" + rand;
+    }
+}
+
 
 
 

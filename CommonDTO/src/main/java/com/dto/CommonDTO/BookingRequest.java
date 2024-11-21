@@ -10,6 +10,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BookingRequest {
+    private String passengerId;
     private String trainNumber;
     private String classType;
     private String seatType;

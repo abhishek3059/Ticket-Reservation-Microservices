@@ -12,7 +12,6 @@ import java.util.Random;
 @Getter
 @Setter
 @AllArgsConstructor
-@NoArgsConstructor
 @Builder
 public class Booking {
 
@@ -34,11 +33,13 @@ public class Booking {
     private LocalDate date;
     @Column(nullable = false)
     private String paymentId;
+    @Column(nullable = false)
+    private Integer seatNumber;
 
 
 
-    @PrePersist
-    public void initializeBookingId(){
+
+    public Booking (){
         Random random = new Random();
          Integer rand = (Integer) (100000 + random.nextInt(900000));
          this.bookingId = rand.toString();

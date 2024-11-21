@@ -26,7 +26,7 @@ public class TrainController {
         return trainService.getAll();
     }
 
-    @GetMapping("/trainDTO/available-seats}")
+    @GetMapping("/trainDTO/available-seats")
     public ResponseEntity<List<Integer>> getAvailableSeats(@RequestBody BookingRequest request){
         return trainService.getAvailableSeats(request.getTrainNumber(), request.getClassType(), request.getSeatType());
     }
@@ -37,9 +37,8 @@ public class TrainController {
             (@RequestParam String trainNumber,
              @RequestParam String classType,
              @RequestParam String seatType,
-             @RequestParam  Integer seatNumber,
-             @RequestParam String bookingId){
-        return trainService.bookSeat(trainNumber, classType,seatType, seatNumber, bookingId);
+             @RequestParam  Integer seatNumber){
+        return trainService.bookSeat(trainNumber, classType,seatType, seatNumber);
     }
 
 
@@ -60,7 +59,7 @@ public class TrainController {
         return trainService.getTotalDistanceBetweenBoardingAndDestination(trainNumber,boardingStation,destination);
     }
 
-    @GetMapping("/public/{trainNumber}") @ResponseStatus(HttpStatus.CREATED)
+    @GetMapping("/public/{trainNumber}") @ResponseStatus(HttpStatus.ACCEPTED)
     public ResponseEntity<TrainDTO> getTrainByTrainNo(@PathVariable String trainNumber){
         return trainService.getTrainByTrainNumber(trainNumber);
     }

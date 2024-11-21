@@ -16,9 +16,11 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Location {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long locationId;
+
     @Column(nullable = false)
     private String stationName;
 
@@ -30,13 +32,14 @@ public class Location {
 
     @Column(nullable = false)
     private String state;
+
     @ElementCollection // Maps the list of strings as a collection in JPA
     @Column(name = "train_number") // You can specify the column name for items in the list
     private List<String> listOfTrainNumbers;
-    @OneToMany(mappedBy = "source_station")
+
+    @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, orphanRemoval = true) // Fixed mappedBy
     private Set<StationDistance> sourceDistances;
-    @OneToMany(mappedBy = "destination_station")
-    private Set<StationDistance> destinationDistance;
 
-
+    @OneToMany(mappedBy = "destination", cascade = CascadeType.ALL, orphanRemoval = true) // Fixed mappedBy
+    private Set<StationDistance> destinationDistances;
 }

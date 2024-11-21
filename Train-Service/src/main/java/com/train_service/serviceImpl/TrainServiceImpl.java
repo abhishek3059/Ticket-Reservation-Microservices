@@ -11,9 +11,11 @@ import com.train_service.enums.SeatType;
 import com.train_service.model.RouteDistance;
 import com.train_service.model.SeatAllocation;
 import com.train_service.model.Train;
+import com.train_service.repository.SeatAllocationRepository;
 import com.train_service.repository.TrainRepository;
 import com.train_service.service.TrainService;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -29,13 +31,18 @@ public class TrainServiceImpl implements TrainService {
 
     private final TrainRepository trainRepository;
     private final WebClient client;
+    private final WebClient bookingClient;
+    private final SeatAllocationRepository repository;
 
     public TrainServiceImpl
             (WebClient.Builder webClientBuilder,
-             TrainRepository trainRepository)
+             WebClient.Builder bookingClient,
+             TrainRepository trainRepository, SeatAllocationRepository repository)
     {
         this.client = webClientBuilder.baseUrl("lb://LOCATION-SERVICE").build();
+        this.bookingClient = bookingClient.baseUrl("lb://BOOKING-SERVICE").build();
         this.trainRepository = trainRepository;
+        this.repository = repository;
     }
 
 
@@ -64,47 +71,71 @@ public class TrainServiceImpl implements TrainService {
     }
 
     @Override
-    public void addStationToRoute(String trainNumber, Map<Integer,Long> stationWithOrder) {
-       Train train = trainRepository.findByTrainNumber(trainNumber)
-               .orElseThrow(()-> new TrainNotFound("Train with train number "+trainNumber+ " does not exists"));
-       if(train.getTrainRouteDistance().isEmpty()){
-           train.setTrainRouteDistance(new LinkedHashMap<>());
-       }
+    public void addStationToRoute(String trainNumber, Map<Integer, Long> stationWithOrder) {
+        Train train = trainRepository.findByTrainNumber(trainNumber)
+                .orElseThrow(() -> new TrainNotFound("Train with train number " + trainNumber + " does not exist"));
+
+        if (train.getTrainRouteDistance().isEmpty()) {
+            train.setTrainRouteDistance(new LinkedHashMap<>());
+        }
+
+        // Add source station
         RouteDistance sourceStation = new RouteDistance();
-       sourceStation.setStationName(train.getSource());
-       sourceStation.setDistanceFromStart(0.0);
-       train.getTrainRouteDistance().put(1,sourceStation);
+        sourceStation.setStationName(train.getSource());
+        sourceStation.setDistanceFromStart(0.0);
+        train.getTrainRouteDistance().put(1, sourceStation);
 
-       Double combinedDistance = 0.0;
+        Double combinedDistance = 0.0;
 
-       for(Map.Entry<Integer,Long> entry : stationWithOrder.entrySet()){
-           Integer order = entry.getKey();
-           Long locationId = entry.getValue();
-           LocationDTO station = fetchLocationFromLocationService(locationId);
-           if(station == null){
-               throw new IllegalArgumentException("Station cannot be found in location-service");
+        // Add intermediate stations
+        for (Map.Entry<Integer, Long> entry : stationWithOrder.entrySet()) {
+            Integer order = entry.getKey();
+            Long locationId = entry.getValue();
 
-           }
-           if(order > 1){
-               Double distanceBetweenStations = calculateDistanceBetweenStation(train.getTrainRouteDistance().get(order - 1).getStationName(),station.getStationName());
-               combinedDistance += distanceBetweenStations;
-           }
-           RouteDistance routeDistance = new RouteDistance();
-           routeDistance.setStationName(station.getStationName());
-           routeDistance.setDistanceFromStart(combinedDistance);
-           train.getTrainRouteDistance().put(order,routeDistance);
+            LocationDTO station = fetchLocationFromLocationService(locationId);
+            if (station == null) {
+                throw new IllegalArgumentException("Station cannot be found in location-service");
+            }
 
-           int max = train.getTrainRouteDistance().keySet().stream().max(Integer::compareTo).orElse(1);
-           Double finalDistance = calculateDistanceBetweenStation(train.getTrainRouteDistance().get(max).getStationName(),train.getDestination());
-           RouteDistance destinationStation = new RouteDistance();
-           destinationStation.setStationName(train.getDestination());
-           destinationStation.setDistanceFromStart(combinedDistance+finalDistance);
-           train.getTrainRouteDistance().put(max + 1, destinationStation);
+            if (order > 1) {
+                // Get the previous station
+                RouteDistance previousStation = train.getTrainRouteDistance().get(order - 1);
+                if (previousStation == null) {
+                    throw new IllegalStateException("Previous station not found for order: " + (order - 1));
+                }
 
-           trainRepository.save(train);
-       }
+                // Calculate the distance from the previous station to the current station
+                Double distanceBetweenStations = calculateDistanceBetweenStation(
+                        previousStation.getStationName(),
+                        station.getStationName()
+                );
+                combinedDistance += distanceBetweenStations;
+            }
 
+            // Add the current station to the route
+            RouteDistance routeDistance = new RouteDistance();
+            routeDistance.setStationName(station.getStationName());
+            routeDistance.setDistanceFromStart(combinedDistance);
+            train.getTrainRouteDistance().put(order, routeDistance);
+        }
+
+        // Add destination station after processing all intermediate stations
+        int maxOrder = train.getTrainRouteDistance().keySet().stream().max(Integer::compareTo).orElse(1);
+        RouteDistance lastStation = train.getTrainRouteDistance().get(maxOrder);
+        if (lastStation == null) {
+            throw new IllegalStateException("Last station not found for order: " + maxOrder);
+        }
+
+        Double finalDistance = calculateDistanceBetweenStation(lastStation.getStationName(), train.getDestination());
+        RouteDistance destinationStation = new RouteDistance();
+        destinationStation.setStationName(train.getDestination());
+        destinationStation.setDistanceFromStart(combinedDistance + finalDistance);
+        train.getTrainRouteDistance().put(maxOrder + 1, destinationStation);
+
+        // Save the train entity
+        trainRepository.save(train);
     }
+
 
     @Override
     public ResponseEntity<Double> getTotalDistanceForTrain(String trainNumber){
@@ -179,94 +210,140 @@ public class TrainServiceImpl implements TrainService {
             throw new TrainAlreadyExists("Train Already exists in database");
         }
         Train trainToBeSaved = convertTrainDTOtoTrain(train);
-        initializeSeats(trainToBeSaved);
+        trainRepository.save(trainToBeSaved);
+        initializeSeats(trainToBeSaved.getTrainNumber());
         trainRepository.save(trainToBeSaved);
 
 
     }
     @Override
     public ResponseEntity<List<Integer>> getAvailableSeats(String trainNumber, String bookingClass, String seatChoice){
+       Train train = trainRepository.findByTrainNumber(trainNumber).orElseThrow(() -> new TrainNotFound("Train Not found"));
+       ClassType classType = ClassType.valueOf(bookingClass);
+       SeatType seatType = SeatType.valueOf(seatChoice);
+        List<SeatAllocation> seats = repository.findAllByClassType(classType);
 
-        ClassType classType = ClassType.valueOf(bookingClass.toUpperCase());
-        SeatType seatType = SeatType.valueOf(seatChoice);
-        Train train = trainRepository.findByTrainNumber(trainNumber).orElseThrow(() ->
-                new TrainNotFound("Train with " + trainNumber+ " does not exists"));
-      List<Integer> seatList =  train.getSeatAllocations()
-              .get(classType)
-              .get(seatType)
-              .entrySet()
-              .stream()
-              .filter(entry ->
-                      !entry.getValue().getIsBooked())
-              .map(Map.Entry::getKey)
-              .toList();
-      return ResponseEntity.ok(seatList);
-    }
-    @Override
-    public ResponseEntity<Boolean> bookSeat
-            (String trainNumber, String bookingClassType,String bookingSeatType, Integer seatNumber, String bookingId){
-        ClassType classType = ClassType.valueOf(bookingClassType);
-        SeatType seatType = SeatType.valueOf(bookingSeatType);
+        if (seats != null && !seats.isEmpty()) {
+            // Filter seats based on SeatType, train and availability (not booked)
+            List<Integer> availableSeats = seats.stream()
+                    .filter(seat -> seat.getSeatType().equals(seatType)
+                            && seat.getTrain().equals(train)
+                            && !seat.getIsBooked())  // Check if seat is not booked
+                    .map(SeatAllocation::getSeatNumber)  // Extract seat numbers
+                    .collect(Collectors.toList());  // Collect available seat numbers into a list
 
-        Train train = trainRepository.findByTrainNumber(trainNumber).orElseThrow(() ->
-                new TrainNotFound("Train with " + trainNumber+ " does not exists"));
-
-        Map<Integer,SeatAllocation> seatMap = train.getSeatAllocations().get(classType).get(seatType);
-        SeatAllocation seat = seatMap.get(seatNumber);
-        if(seat != null && !seat.getIsBooked()){
-            seat.setIsBooked(true);
-            seat.setBookingId(bookingId);
-            trainRepository.save(train);
-            return ResponseEntity.ok(true);
+            // Return available seats as a response
+            if (availableSeats.isEmpty()) {
+                return ResponseEntity.noContent().build(); // No seats available
+            } else {
+                return ResponseEntity.ok(availableSeats);  // Return available seats
+            }
         }
-        return ResponseEntity.ok(false);
+
+        // Return bad request if no seats found
+        return ResponseEntity.badRequest().body(Collections.emptyList());
 
     }
     @Override
-    public void releaseSeat(String trainNumber, String bookingId){
-       Train train = trainRepository.findByTrainNumber(trainNumber).orElseThrow(() ->
-                new TrainNotFound("Train with trainNumber "+trainNumber+" cannot be found"));
-        for(Map.Entry<ClassType,Map<SeatType,Map<Integer,SeatAllocation>>> entry1 : train.getSeatAllocations().entrySet()){
-            Map<SeatType,Map<Integer,SeatAllocation>> innerMap1 = entry1.getValue();
-            for(Map.Entry<SeatType,Map<Integer,SeatAllocation>> entry2 : innerMap1.entrySet()){
-                Map<Integer,SeatAllocation> innerMap2 = entry2.getValue();
-                for(Map.Entry<Integer,SeatAllocation> entry3 : innerMap2.entrySet()){
-                    SeatAllocation seat = entry3.getValue();
-                    if(seat.getBookingId().equals(bookingId)){
-                        seat.setBookingId(null);
-                        seat.setIsBooked(false);
-                    }
+    public ResponseEntity<Boolean> bookSeat(
+            String trainNumber,
+            String bookingClassType,
+            String bookingSeatType,
+            Integer seatNumber
+    ) {
+        // Convert strings to enums
+        ClassType classType = ClassType.valueOf(bookingClassType.toUpperCase());
+        SeatType seatType = SeatType.valueOf(bookingSeatType.toUpperCase());
+
+        // Fetch the train by trainNumber
+        Train train = trainRepository.findByTrainNumber(trainNumber)
+                .orElseThrow(() -> new TrainNotFound("Train with "+  trainNumber + " does not exist"));
+
+        // Fetch all seat allocations by classType and train
+        List<SeatAllocation> seats = repository.findAllByClassTypeAndTrain(classType, train);
+
+        // Iterate through the seat list
+        for (SeatAllocation seat : seats) {
+            // Check for seat type, seat number, and availability
+            if (seat.getSeatType() == seatType &&
+                    seat.getSeatNumber().equals(seatNumber) &&
+                    !seat.getIsBooked()) {
+                seat.setIsBooked(true);
+                repository.save(seat);
+                // Persist changes to the database
+                seat.setBookingId(fetchBookingIdFromBookingService(seat.getSeatNumber()));
+                repository.save(seat);
+                return ResponseEntity.ok(true); // Seat booking successful
+            }
+        }
+
+        // No suitable seat found
+        return ResponseEntity.badRequest().body(false);
+    }
+
+    private String fetchBookingIdFromBookingService(Integer seatNumber) {
+        return bookingClient.get().uri(uri -> uri.path("/api/bookings/bookingIdAfterSaving")
+                .queryParam("seatNumber",seatNumber)
+                .build())
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+    }
+
+
+    @Override
+    public ResponseEntity<Boolean> releaseSeat(String trainNumber, String bookingId) {
+        // Retrieve the train object based on train number
+        Train train = trainRepository.findByTrainNumber(trainNumber).orElseThrow(() ->
+                new TrainNotFound("Train with trainNumber " + trainNumber + " cannot be found"));
+
+        // Find the booked seat associated with the bookingId (returns Optional)
+        Optional<SeatAllocation> bookedSeatOptional = repository.findByBookingId(bookingId);
+
+        // Check if a seat with the given bookingId is found
+        if (bookedSeatOptional.isPresent()) {
+            SeatAllocation seat = bookedSeatOptional.get();
+
+            // Ensure the seat belongs to the given train and is currently booked
+            if (seat.getTrain().equals(train) && seat.getIsBooked()) {
+                // Release the seat (unbook it)
+                seat.setIsBooked(false);
+                seat.setBookingId(null);  // Clear the booking ID
+                repository.save(seat);  // Save updated seat
+                return ResponseEntity.ok(true);  // Successfully released the seat
+            }
+        }
+        return ResponseEntity.badRequest().build();
+    }
+
+    private void initializeSeats(String trainNumber) {
+        Train train = trainRepository.findByTrainNumber(trainNumber)
+                .orElseThrow(() ->
+                        new TrainNotFound("Train Not exists"));
+
+
+        Map<ClassType , Integer> seatMap = new HashMap<>();
+        seatMap.put(ClassType.FIRST_AC, 50);
+        seatMap.put(ClassType.AC_TWO_TIER, 75);
+        seatMap.put(ClassType.AC_THREE_TIER,100);
+        seatMap.put(ClassType.SLEEPER, 125);
+
+        for(ClassType classType : ClassType.values()){
+            int seatCount = seatMap.get(classType);
+            for(int i = 1; i <= seatCount; i++){
+                for(SeatType seatType : SeatType.values()){
+                    SeatAllocation seat = new SeatAllocation();
+                    seat.setSeatNumber(i);
+                    seat.setTrain(train);
+                    seat.setClassType(classType);
+                    seat.setBookingId(null);
+                    seat.setIsBooked(false);
                 }
             }
-
         }
+        train.setSeatConfiguration(seatMap);
         trainRepository.save(train);
-    }
-
-    private void initializeSeats(Train train) {
-      Map<ClassType,Map<SeatType,Map<Integer, SeatAllocation>>> allSeatMap = new HashMap<>();
-      for(ClassType classType : ClassType.values()){
-      Map<SeatType,Map<Integer,SeatAllocation>> seatTypeAllocationMap = new HashMap<>();
-        for(SeatType seatType : SeatType.values()){
-            Map<Integer,SeatAllocation>seatAllocationMap = new HashMap<>();
-           int seatCount = switch (classType){
-                case FIRST_AC -> 15;
-                case AC_TWO_TIER -> 25;
-                case AC_THREE_TIER -> 45;
-                case SLEEPER -> 75;
-            };
-           for(int i = 1; i <= seatCount; i++){
-               SeatAllocation seat = new SeatAllocation();
-               seat.setSeatNumber(i);
-               seat.setIsBooked(false);
-               seat.setBookingId(null);
-               seatAllocationMap.put(i,seat);
-           }
-           seatTypeAllocationMap.put(seatType,seatAllocationMap);
-        }
-        allSeatMap.put(classType, seatTypeAllocationMap);
-      }
-      train.setSeatAllocations(allSeatMap);
 
     }
 
@@ -297,6 +374,9 @@ public class TrainServiceImpl implements TrainService {
         return dto;
     }
     private Map<Integer, RouteDistance> convertTrainRouteDistanceDTOIntoTrainRouteDistance(Map<Integer, RouteDistanceDTO> trainRouteDistance) {
+        if(trainRouteDistance == null){
+            return new LinkedHashMap<>();
+        }
         Map<Integer,RouteDistance> toBeConvertedMap = new LinkedHashMap<>();
         for (Map.Entry<Integer,RouteDistanceDTO> entry : trainRouteDistance.entrySet()){
             toBeConvertedMap.put(entry.getKey(), convertRouteDistanceDTOIntoRouteDistance(entry.getValue()));
@@ -320,43 +400,40 @@ public class TrainServiceImpl implements TrainService {
                  .name(train.getName())
                  .trainRouteDistance(convertTrainRouteDistanceDTOIntoTrainRouteDistance(train.getTrainRouteDistance()))
                  .build();
-         if (train.getRunningDays() != null && checkValidDaysForSavingRunningDaysOfTrain(train.getRunningDays())) {
-             EnumSet<Days> runningDays = convertDTORunningDaysIntoTrainRunningDays(train.getRunningDays());
-             train1.setRunningDays(runningDays);
-         }
+        Set<Days> convertedDTODays = convertDTORunningDaysIntoTrainRunningDays(train.getRunningDays());
+        if (train.getRunningDays() != null && checkValidDaysForSavingRunningDaysOfTrain(convertedDTODays)) {
+            train.setRunningDays(train.getRunningDays());
+        } else {
+            throw new IllegalArgumentException("Invalid running days provided.");
+        }
          return train1;
      }
 
-    private EnumSet<Days> convertDTORunningDaysIntoTrainRunningDays(Set<String> runningDays) {
-        EnumSet<Days> days = EnumSet.noneOf(Days.class);
+    private Set<Days> convertDTORunningDaysIntoTrainRunningDays(Set<String> runningDays) {
+        Set<Days> days = EnumSet.noneOf(Days.class);
         for(String S : runningDays){
             days.add(Days.valueOf(S.toUpperCase()));
         }
         return days;
     }
 
-    private Boolean checkValidDaysForSavingRunningDaysOfTrain(Set<String> runningDays) {
-             boolean flag = true;
-         for(String days : runningDays){
-             if(!(days.equalsIgnoreCase("monday")||
-                     days.equalsIgnoreCase("tuesday")||
-                     days.equalsIgnoreCase("wednesday")||
-                     days.equalsIgnoreCase("thursday")||
-                     days.equalsIgnoreCase("friday")||
-                     days.equalsIgnoreCase("saturday")||
-                     days.equalsIgnoreCase("sunday"))){
-                 flag = false;
-                 throw new IllegalArgumentException("Invalid day "+ days);
-             }
-
-         }
-         return flag;
+    private boolean checkValidDaysForSavingRunningDaysOfTrain(Set<Days> runningDays) {
+        // Validate that all days in the set are part of the Days enum
+        return runningDays.stream().allMatch(day -> Arrays.asList(Days.values()).contains(day));
     }
 
     private Double calculateDistanceBetweenStation(String source, String destination) {
-            return client.get().uri("/DTO/distance/{sourceStationName}/{destinationStationName}",source,destination)
-                    .retrieve().bodyToMono(Double.class).block();
+        try {
+            Double distance = client.get()
+                    .uri("/api/location/DTO/distance/{sourceStationName}/{destinationStationName}",source,destination)
+                    .retrieve()
+                    .bodyToMono(Double.class)
+                    .block(); // Blocks until response is received
+            return distance;
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching distance between " + source + " and " + destination, e);
         }
+    }
 
 
 

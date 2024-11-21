@@ -121,7 +121,7 @@ public class LocationServiceImpl implements LocationService {
     }
     @Override
     public ResponseEntity<Boolean> verifyStationDetails(String stationName){
-        if(locationRepository.existsByStationName(stationName)){
+        if(!locationRepository.existsByStationName(stationName)){
             throw new IllegalArgumentException("Station "+stationName+" does not exists");
         }
         else{

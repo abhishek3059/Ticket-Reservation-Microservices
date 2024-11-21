@@ -15,7 +15,7 @@ public class PassengerController {
 
     private final PassengerService passengerService;
     @PostMapping("/user/create")
-    public ResponseEntity<Void> createPassenger(PassengerDTO passengerDTO) throws ParseException {
+    public ResponseEntity<Void> createPassenger(@RequestBody PassengerDTO passengerDTO) throws ParseException {
         return passengerService.createPassenger(passengerDTO);
     }
     @GetMapping("/passengerDTO/passenger_details")

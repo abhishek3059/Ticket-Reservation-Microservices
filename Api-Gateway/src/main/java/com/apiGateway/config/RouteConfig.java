@@ -25,8 +25,6 @@ public class RouteConfig {
                         .path("/api/auth/users/**")
                         .filters(f->f.filter(jwtFilter.apply(new JwtFilter.config())))
                         .uri("lb://USER-AUTHENTICATION"))
-
-
                 .route("location-service-public",r-> r
                         .path("/api/bookings/public/**")
                         .uri("lb://LOCATION-SERVICE"))
@@ -41,6 +39,16 @@ public class RouteConfig {
                         .path("/api/trains/private/**")
                         .filters(f->f.filter(jwtFilter.apply(new JwtFilter.config())))
                         .uri("lb://TRAIN-SERVICE"))
+                .route("passenger-service",r-> r
+                        .path("/api/passenger/**")
+                        .filters(f->f.filter(jwtFilter.apply(new JwtFilter.config())))
+                        .uri("lb://PASSENGER-SERVICE"))
+                .route("booking-service",r-> r
+                        .path("/api/bookings/**")
+                        .filters(f->f.filter(jwtFilter.apply(new JwtFilter.config())))
+                        .uri("lb://BOOKING-SERVICE"))
+
+
                 .build();
     }
 

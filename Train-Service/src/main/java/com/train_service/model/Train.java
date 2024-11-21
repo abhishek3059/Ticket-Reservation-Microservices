@@ -5,6 +5,7 @@ import com.dto.CommonDTO.LocationDTO;
 import com.train_service.enums.ClassType;
 import com.train_service.enums.Days;
 import com.train_service.enums.SeatType;
+import com.train_service.nestedDatabaseConverter.SeatAllocationJsonConverter;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -28,22 +29,19 @@ import java.util.*;
         private String name;
         private Double baseFare;
 
-
-
-        @ElementCollection
-        @CollectionTable(name = "seat_allocation",
-                joinColumns =   
-                @JoinColumn(name = "train_id"))
-        @MapKeyEnumerated(EnumType.STRING)
-        private Map<ClassType, Map<SeatType, Map<Integer, SeatAllocation>>> seatAllocations = new HashMap<>();
-
+    @ElementCollection
+    @CollectionTable(name = "seat_configuration",
+            joinColumns = @JoinColumn(name = "train_id"))
+    @MapKeyEnumerated(EnumType.STRING)
+    @Column(name = "seat_count")
+    private Map<ClassType, Integer> seatConfiguration = new HashMap<>();
 
         @ElementCollection(targetClass = Days.class)
         @CollectionTable(name = "train_schedule", joinColumns =
         @JoinColumn(name = "train_id"))
         @Enumerated(EnumType.STRING)
         @Column(name = "running_days")
-        private EnumSet<Days> runningDays;
+        private Set<Days> runningDays = new HashSet<>();
         @ElementCollection
         @CollectionTable(name = "train_route",
             joinColumns = @JoinColumn(name = "train_id"))
