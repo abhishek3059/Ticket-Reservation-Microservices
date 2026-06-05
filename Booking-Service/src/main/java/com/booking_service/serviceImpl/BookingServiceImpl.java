@@ -51,7 +51,7 @@ public class BookingServiceImpl implements BookingService {
      TrainDTO trainDTO = getTrainObject(request.getTrainNumber());
      LocalDate DateOfBooking = LocalDate.now();
      if(!trainDTO.getRunningDays().contains(DateOfBooking.getDayOfWeek().name().toUpperCase())){
-         throw new IllegalArgumentException(STR."This train is not available for booking on \{DateOfBooking.getDayOfWeek().name()} this day");
+         throw new IllegalArgumentException("This train is not available for booking on " + DateOfBooking.getDayOfWeek().name() + " this day");
      }
 
      else{

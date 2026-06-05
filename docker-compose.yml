@@ -1,0 +1,122 @@
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=Redhair@12
+      - MYSQL_DATABASE=ticket_reservation
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  service-registry:
+    build:
+      context: .
+      dockerfile: Service-Registry/Dockerfile
+    container_name: service-registry
+    ports:
+      - "8761:8761"
+    depends_on:
+      - mysql-db
+
+  user-authentication:
+    build:
+      context: .
+      dockerfile: User-Authentication/Dockerfile
+    container_name: user-authentication
+    ports:
+      - "8041:8041"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/ticket_reservation
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+    depends_on:
+      - mysql-db
+      - service-registry
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Api-Gateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+      - AUTH_SERVICE_URL=http://user-authentication:8041
+    depends_on:
+      - user-authentication
+      - service-registry
+
+  train-service:
+    build:
+      context: .
+      dockerfile: Train-Service/Dockerfile
+    container_name: train-service
+    ports:
+      - "8065:8065"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/train_service
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+    depends_on:
+      - mysql-db
+      - service-registry
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: Payment-Service/Dockerfile
+    container_name: payment-service
+    ports:
+      - "8067:8067"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/payment-service
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+    depends_on:
+      - mysql-db
+      - service-registry
+
+  location-service:
+    build:
+      context: .
+      dockerfile: Location-Service/Dockerfile
+    container_name: location-service
+    ports:
+      - "8066:8066"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/location-service
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+    depends_on:
+      - mysql-db
+      - service-registry
+
+  booking-service:
+    build:
+      context: .
+      dockerfile: Booking-Service/Dockerfile
+    container_name: booking-service
+    ports:
+      - "8069:8069"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/booking-service
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+    depends_on:
+      - mysql-db
+      - service-registry
+
+  passenger-service:
+    build:
+      context: .
+      dockerfile: Passenger-Service/Dockerfile
+    container_name: passenger-service
+    ports:
+      - "8070:8070"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/passenger-service
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+    depends_on:
+      - mysql-db
+      - service-registry
+
+volumes:
+  mysql_data:
